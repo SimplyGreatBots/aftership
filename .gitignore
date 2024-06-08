@@ -1,0 +1,4 @@
+.vs
+.botpress
+node_modules
+.env

@@ -1,0 +1,24 @@
+{
+  "name": "aftership",
+  "integrationName": "aftership",
+  "scripts": {
+    "type:check": "tsc --noEmit",
+    "version": "bp --version",
+    "login": "bp login",
+    "dev": "bp dev",
+    "gen": "bp gen",
+    "deploy": "bp deploy"
+  },
+  "private": true,
+  "dependencies": {
+    "@botpress/client": "0.21.0",
+    "@botpress/sdk": "0.8.23",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@botpress/cli": "^0.8.28",
+    "@types/node": "^18.19.34",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.9.5"
+  }
+}
