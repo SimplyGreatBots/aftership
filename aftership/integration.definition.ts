@@ -21,10 +21,10 @@ export default new IntegrationDefinition({
       description: 'Create a new tracking in AfterShip',
       input: {
         schema: z.object({
+          conversationId: z.string().describe('Id of the conversation'),
           trackingNumber: z.string().describe('Tracking number of the shipment'),
-          slug: z.string().describe('Unique courier code'),
+          slug: z.string().describe('Unique courier code').optional(),
           title: z.string().describe('Custom title for the tracking (defaults to tracking number)').optional(),
-          orderId: z.string().describe('Globally-unique identifier for the order'),
         }),
       },
       output: { 

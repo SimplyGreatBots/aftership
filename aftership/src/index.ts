@@ -48,9 +48,56 @@ export default new bp.Integration({
     }
   },
   unregister: async () => {
-    throw new sdk.RuntimeError('Configuration unregister Not Implemented')
   },
-  actions: {},
+  actions: {
+    createTracking: async (args): Promise<{}> => {
+      args.logger.forBot().info('Creating Tracking')
+      
+      const apiKey = args.ctx.configuration.apiKey
+      const trackingNumber = args.input.trackingNumber
+      const slug = args.input.slug || ''
+      const title = args.input.title || ''
+      const conversationId = args.input.conversationId  
+
+      var trackingOptions = {
+        method: 'POST',
+        url: 'https://api.aftership.com/tracking/2024-04/trackings',
+        headers: {'Content-Type': 'application/json', 'as-api-key': apiKey },
+        data: {
+          tracking: {
+            slug: slug,
+            tracking_number: trackingNumber,
+            title: title,
+            custom_fields: {
+              conversation_id: conversationId,
+            }
+          }
+        }
+      }
+
+      try {
+        const trackingResponse = await axios.request(trackingOptions)
+        const validationResult = trackingResponseSchema.safeParse(trackingResponse.data)
+    
+        if (!validationResult.success) {
+          args.logger.forBot().error(`Validation error: ${JSON.stringify(validationResult.error.issues)}`)
+        }
+        args.logger.forBot().info('Tracking created')
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const statusCode = error.response ? error.response.status : 'No Status Code'
+          const statusText = error.response ? error.response.statusText : 'No Status Text'
+          args.logger.forBot().error(`Axios error - ${statusCode} ${statusText}: ${error.message}`)
+          throw new sdk.RuntimeError(`Axios error - ${statusCode} ${statusText}: ${error.message}`)
+        } else {
+          args.logger.forBot().error(`Unexpected error: ${JSON.stringify(error, null, 2)}`)
+          throw new sdk.RuntimeError(`Unexpected error: ${JSON.stringify(error, null, 2)}`)
+        }
+      }
+
+      return {}
+    }
+  },
   channels: {},
   handler: async () => {
     
