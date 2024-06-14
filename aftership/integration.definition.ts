@@ -36,23 +36,12 @@ export default new IntegrationDefinition({
     aftershipEvent: {
       title: 'AfterShip Event',
       description: 'This event is received when a tracking update occurs in AfterShip.',
-      schema: z.object({
-        ts: z.number().describe('UTC unix timestamp that the event occurred'),
-        event: z.string().describe('The code of the event'),
-        event_id: z.string().uuid().describe('UUID v4 format, to uniquely identify the webhook event'),
-        is_tracking_first_tag: z.boolean().describe('Indicates if it is the first tracking update sent under a specific delivery tag'),
-        msg: z.object({
-          tracking_number: z.string().describe('The tracking number of the shipment'),
-          carrier: z.string().describe('The carrier handling the shipment'),
-          status: z.string().describe('Current status of the shipment'),
-          checkpoint: z.array(
-            z.object({
-              message: z.string().describe('Detailed message of the checkpoint'),
-              time: z.string().describe('Time of the checkpoint in ISO 8601 format'),
-            })
-          ).describe('List of checkpoints for the shipment')
+        schema: z.object({
+          conversation: z.object({
+            id: z.string().describe('ID of the conversation'),
+          }),
+          data: z.record(z.any()),
         }).passthrough(),
-      }).passthrough(),
     }
   },
 })

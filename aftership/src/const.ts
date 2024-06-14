@@ -12,3 +12,15 @@ export const trackingResponseSchema = z.object({
     slug: z.string().optional(),
   }).optional(),
 })
+
+export const aftershipWebhookEventSchema = z.object({
+  event: z.string(),
+  event_id: z.string().uuid(),
+  is_tracking_first_tag: z.boolean(),
+  msg: z.object({
+    custom_fields: z.object({
+      conversation_id: z.string().optional()
+    }).optional(),
+  }).passthrough(),
+  ts: z.number()
+}).passthrough()

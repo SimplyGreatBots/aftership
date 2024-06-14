@@ -1,7 +1,8 @@
 import * as sdk from '@botpress/sdk'
 import * as bp from '.botpress'
 import axios from 'axios'
-import { trackingResponseSchema } from './const'
+import { aftershipWebhookEventSchema, trackingResponseSchema } from './const'
+import { log } from 'console'
 
 export default new bp.Integration({
   register: async ({ logger, ctx }) => {
@@ -99,7 +100,43 @@ export default new bp.Integration({
     }
   },
   channels: {},
-  handler: async () => {
+  handler: async ({ req, logger, client }) => {
+
+    const bodyObject = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    const parsedData = aftershipWebhookEventSchema.safeParse(bodyObject)
+  
+    if (!parsedData.success) {
+      logger.forBot().error('Invalid Aftership webhook event:', parsedData.error)
+      return
+    }
     
-  },
+    logger.forBot().info('Aftership webhook event received:', parsedData.data)
+    const conversation_id = parsedData.data.msg.custom_fields?.conversation_id;
+
+    if (!conversation_id) {
+      logger.forBot().warn('No conversation ID found in the webhook payload.')
+      throw new sdk.RuntimeError('No conversation ID found in the webhook payload.')
+    }
+
+    if (parsedData.data.is_tracking_first_tag) {
+      try {
+        const aftershipEvent = await client.createEvent({
+          type: 'aftershipEvent',
+          conversationId: conversation_id,
+          payload: {
+            conversation: {
+              id: conversation_id
+            },
+            data: parsedData.data 
+          },
+        })
+        
+        logger.forBot().debug('Aftership event created successfully.', aftershipEvent);
+      } catch (error) {
+        logger.forBot().error('Failed to create Aftership event:', error);
+      }
+    } else {
+      logger.forBot().warn('Non-initial tracking update received; no event created.');
+    }
+  }
 })
