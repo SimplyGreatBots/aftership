@@ -7,7 +7,7 @@ The `Track Shipment` action can be used to initiate tracking of a shipment. It r
 
 `Conversation Id` is a unique identifier for each conversation. You can pass `{{event.conversationId}}` into this field to embed your ID. When receiving an Aftership update, you can use `{{event.payload.conversation.id}}` in the Advanced Options `Conversation ID` field of the `Aftership Event Trigger`. This directs the update to the appropriate conversation.
 
-You can view the full integration code at: https://github.com/SimplyGreatBots/aftership
+You can view the full integration code on the Simply Great Bots Git page: [Aftership Repo](https://github.com/SimplyGreatBots/aftership)
 
 ### Aftership Setup
 
