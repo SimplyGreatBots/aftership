@@ -2,7 +2,7 @@ import * as sdk from '@botpress/sdk'
 import * as bp from '.botpress'
 import axios from 'axios'
 import { aftershipWebhookEventSchema, trackingResponseSchema } from './const'
-import { log } from 'console'
+
 
 export default new bp.Integration({
   register: async ({ logger, ctx }) => {
@@ -36,8 +36,8 @@ export default new bp.Integration({
         const statusText = error.response ? error.response.statusText : 'No Status Text'
   
         if (statusCode === 401) {
-          logger.forBot().error('Authorization error: API key is not valid')
-          throw new sdk.RuntimeError('Authorization error: API key is not valid')
+          logger.forBot().error(errorCode401)
+          throw new sdk.RuntimeError(errorCode401)
         } else {
           const detailedMessage = `Axios error - ${statusCode} ${statusText}: ${error.message}`
           throw new sdk.RuntimeError(detailedMessage);
@@ -75,21 +75,22 @@ export default new bp.Integration({
           }
         }
       }
-
       try {
         const trackingResponse = await axios.request(trackingOptions)
         const validationResult = trackingResponseSchema.safeParse(trackingResponse.data)
     
         if (!validationResult.success) {
           args.logger.forBot().error(`Validation error: ${JSON.stringify(validationResult.error.issues)}`)
+          return {}
         }
-        args.logger.forBot().info('Tracking created')
+
+        args.logger.forBot().info('Tracking created');
       } catch (error) {
-        if (axios.isAxiosError(error)) {
-          const statusCode = error.response ? error.response.status : 'No Status Code'
-          const statusText = error.response ? error.response.statusText : 'No Status Text'
-          args.logger.forBot().error(`Axios error - ${statusCode} ${statusText}: ${error.message}`)
-          throw new sdk.RuntimeError(`Axios error - ${statusCode} ${statusText}: ${error.message}`)
+        if (axios.isAxiosError(error) && error.response) {
+          const meta = error.response.data.meta
+          const errorCodeMessage = getErrorCodeDescription(meta.code, meta.message)
+          args.logger.forBot().error(`Error - ${meta.code} ${meta.type}: ${errorCodeMessage}`)
+          throw new sdk.RuntimeError(`Error - ${meta.code} ${meta.type}: ${errorCodeMessage}`)
         } else {
           args.logger.forBot().error(`Unexpected error: ${JSON.stringify(error, null, 2)}`)
           throw new sdk.RuntimeError(`Unexpected error: ${JSON.stringify(error, null, 2)}`)
@@ -106,15 +107,14 @@ export default new bp.Integration({
     const parsedData = aftershipWebhookEventSchema.safeParse(bodyObject)
   
     if (!parsedData.success) {
-      logger.forBot().error('Invalid Aftership webhook event:', parsedData.error)
+      logger.forBot().info('Not an Aftership webhook event or event does not match aftership event schema:', parsedData.error)
       return
     }
     
-    logger.forBot().info('Aftership webhook event received:', parsedData.data)
     const conversation_id = parsedData.data.msg.custom_fields?.conversation_id;
 
     if (!conversation_id) {
-      logger.forBot().warn('No conversation ID found in the webhook payload.')
+      logger.forBot().error('No conversation ID found in the webhook payload.')
       throw new sdk.RuntimeError('No conversation ID found in the webhook payload.')
     }
 
@@ -131,12 +131,37 @@ export default new bp.Integration({
           },
         })
         
-        logger.forBot().debug('Aftership event created successfully.', aftershipEvent);
+        logger.forBot().info('Aftership event created successfully.', aftershipEvent);
       } catch (error) {
         logger.forBot().error('Failed to create Aftership event:', error);
       }
     } else {
-      logger.forBot().warn('Non-initial tracking update received; no event created.');
+      logger.forBot().info('Non-initial tracking update received; no event created.');
     }
   }
 })
+
+function getErrorCodeDescription(code: number, defaultMessage: string) {
+  const errorDescriptions: { [key: number]: string } = {
+    400: "The request was invalid or cannot be otherwise served.",
+    4001: "Invalid JSON data.",
+    4003: "Tracking already exists.",
+    4004: "Tracking does not exist.",
+    4005: "The value of tracking_number is invalid.",
+    4006: "Tracking object is required.",
+    4007: "Tracking_number is required.",
+    4008: "The value of a specific field is invalid.",
+    4009: "A required field is missing.",
+    401: "API Key is invalid or this account is not authorized to access tracking events. You must have an Aftership Pro plan or higher.",
+    4010: "The value of slug is invalid.",
+    4011: "Missing or invalid value of the required fields for this courier.",
+    4012: "Unable to import shipment due to various carrier issues.",
+    4013: "Retrack is not allowed. You can only retrack an inactive tracking.",
+    403: "You must have an Aftership Pro plan or higher. The request has been refused or access is not allowed.",
+    404: "The URI requested is invalid or the resource requested does not exist.",
+    429: "You have exceeded the API call rate limit.",
+    500: "Something went wrong on AfterShip's end."
+  };
+
+  return errorDescriptions[code] || defaultMessage;
+}

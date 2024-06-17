@@ -11,6 +11,9 @@ You can view the full integration code on the Simply Great Bots Git page: [After
 
 ### Aftership Setup
 
+#### Prerequisite 
+You must have an Aftership Pro plan or higher to receive webhook events for tracking.
+
 #### Getting API Key
 1. Go to [Aftership Admin Dashboard](https://admin.aftership.com/).
 2. Navigate to `Developers` -> `API Keys`.
